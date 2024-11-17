@@ -3,68 +3,75 @@
 namespace Framework312\Router;
 
 use Framework312\Interfaces\Router;
-use Framework312\Interfaces\classes;
 use Framework312\Interfaces\Renderer;
-use Framework312\Request;
-
-require_once __DIR__ . '../../../vendor/autoload.php';
-
-
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class SimpleRouter implements Router
 {
-    private array $routes = [];
-    private Renderer $renderer;
+    private $routes = [];
+    private $renderer;
 
-    public function __construct(Renderer $engine)
+    public function __construct(Renderer $renderer)
     {
-        $this->renderer = $engine;
+        $this->renderer = $renderer;
     }
 
     /**
-     * Enregistrer une route avec son modèle de chemin et sa classe de vue
+     * Register a new route with its associated View.
+     * 
+     * @param string $path
+     * @param string $viewClass
      */
-    public function register(string $path, string $viewClass): void
+    public function register(string $path, string $viewClass)
     {
-        // Convertir les parties dynamiques (comme :id) en expressions régulières
-        $pattern = preg_replace('#:([\w]+)#', '(?P<$1>[\w-]+)', $path);
-        $pattern = "#^" . $pattern . "$#";
+        $this->routes[$path] = $viewClass;
 
-        // Enregistrer la route et sa classe associée
-        $this->routes[] = [
-            'pattern' => $pattern,
-            'viewClass' => $viewClass,
-        ];
+        // Debugging the routes
     }
 
+
     /**
-     * Traiter la requête et servir la réponse
+     * Serve the incoming request by routing it to the appropriate View.
      */
-    public function serve(Request $request): void
+    public function serve()
     {
-        // Recherche de la route correspondante
+        // 1. Créer une nouvelle instance de Request
+        $request = Request::createFromGlobals(); // Utilise HttpFoundation
+    
+        // Récupérer le chemin demandé
+        $path = $request->getPathInfo();
+        echo "Requested Path: $path<br>";
+    
+        // 2. Chercher la vue qui correspond à la route
+        $viewClass = null;
         foreach ($this->routes as $route) {
-            if (preg_match($route['pattern'], $request->getPath(), $matches)) {
-                // Récupérer le nom de la classe de vue associée
+            // Utiliser une expression régulière pour capturer les paramètres dynamiques
+            $regex = '#^' . str_replace(':id', '(\d+)', $route['path']) . '$#'; // Capture les paramètres :id
+            if (preg_match($regex, $path, $matches)) {
+                // Assigner la classe de la vue correspondante
                 $viewClass = $route['viewClass'];
-
-                // Créer une instance de la classe de vue
-                $view = new $viewClass();  // Créer l'instance de la classe
                 
-
-                $view = new $viewClass();
-
-                // Appeler la méthode appropriée (GET ou POST)
-                $method = strtolower($request->getMethod());
-                $data = $view->$method($request);
-
-                // Rendre la vue avec les données via le moteur de template
-                echo $this->renderer->render('book.twig', $data);
-                return;
+                // Assigner les paramètres capturés à la requête
+                $request->attributes->set('id', $matches[1]); // Si :id est capturé, l'ajouter à la requête
+                break;
             }
         }
-
-        // Si aucune route n'est trouvée, afficher une erreur 404
-        echo "404 Not Found";
+    
+        // 3. Si aucune vue n'a été trouvée, renvoyer une erreur 404
+        if (!$viewClass) {
+            $response = new Response('404 Not Found', 404);
+            $response->send();
+            return;
+        }
+    
+        // 4. Instancier la Vue et rendre la réponse
+        $view = new $viewClass();
+        $response = $view->render($request);
+    
+   
+        // Envoyer la réponse au client
+        $response->send();
     }
+    
 }

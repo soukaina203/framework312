@@ -1,5 +1,5 @@
 <?php
-namespace Framework312;
+namespace Framework312\Views;
 
 class Book {
     public function get($request) {
