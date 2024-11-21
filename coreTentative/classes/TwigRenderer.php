@@ -17,16 +17,16 @@ class TwigRenderer implements Renderer
     public function __construct(string $cheminTemplate)
     {
         $this->cheminTemplate = $cheminTemplate;
-    }
+    } 
 
-    public function render(mixed $data, string $template): string
+    public function render(mixed $data, string $template)
     {
         // Initialiser le moteur Twig
         $loader = new FilesystemLoader($this->cheminTemplate);
         $twig = new Environment($loader);
 
         // Rendre le template avec les données fournies
-        return $twig->render($template, $data);
+        echo $twig->render($template, $data);
     }
 
     public function register(string $tag)
