@@ -9,14 +9,14 @@ use Framework312\Router\SimpleRouter;
 // Initialiser le chemin des templates
 $engine = new TwigRenderer('./templates/');
 
-echo $engine->render(['name' => 'jfd'], 'test.html');
+//  $engine->render(['Any' => 'jfd'], 'test.html');
 
-$router = new SimpleRouter($engine);
+ $router = new SimpleRouter($engine);
 
-$router->register('/book/15', \Framework312\View\Book::class);
- 
-  $router->serve();
+ $router->register('/book/:id', \Framework312\View\Book::class);
+//  
+ $router->serve();
 
-
+//
 
 ?>
